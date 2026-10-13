@@ -5,6 +5,8 @@ import time
 import pandas as pd
 import logging
 
+import os
+
 
 from prometheus_fastapi_instrumentator import Instrumentator
 from fastapi import FastAPI, HTTPException
@@ -12,6 +14,8 @@ from pathlib import Path
 
 import logging
 from pathlib import Path
+
+MODEL_VERSION = os.getenv("MODEL_VERSION", "1.0.0")
 
 LOG_DIR = Path(__file__).resolve().parent.parent / "logs"
 LOG_DIR.mkdir(parents=True, exist_ok=True)
