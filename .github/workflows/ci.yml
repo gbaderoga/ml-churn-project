@@ -19,25 +19,37 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Installer Python 3.13
+      - name: Python 3.13
         uses: actions/setup-python@v5
         with:
           python-version: "3.13"
-
-      - name: Diagnostic Python
-        run: |
-          echo "=== Version Python ==="
-          python --version
-          echo "=== Chemin Python ==="
-          which python
-          echo "=== Version pip ==="
-          python -m pip --version
+          cache: pip
 
       - name: Installation des dependances
         run: |
           python -m pip install --upgrade pip
           python -m pip install -r requirements.txt
 
-      - name: Tests
+      - name: Demarrer FastAPI
+        run: |
+          python -m uvicorn api.main:app --host 127.0.0.1 --port 8000 > /tmp/fastapi.log 2>&1 &
+          echo $! > /tmp/fastapi.pid
+
+      - name: Verifier FastAPI
+        run: |
+          for i in {1..30}; do
+            if curl -fsS http://127.0.0.1:8000/health; then
+              exit 0
+            fi
+            sleep 1
+          done
+          cat /tmp/fastapi.log
+          exit 1
+
+      - name: Tests Pytest et Selenium
         run: |
           python -m pytest tests/ -v
+
+      - name: Afficher les logs en cas d'echec
+        if: failure()
+        run: cat /tmp/fastapi.log || true
