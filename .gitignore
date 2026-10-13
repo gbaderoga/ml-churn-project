@@ -4,3 +4,8 @@ __pycache__/
 .ipynb_checkpoints/
 .env
 .pytest_cache/
+
+# JMeter et journaux
+jmeter.log
+logs/
+*.log

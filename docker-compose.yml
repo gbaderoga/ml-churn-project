@@ -1,9 +1,84 @@
-services:
 
+services:
+  # =====================================
+  # 1. API FASTAPI - PREDICTION CHURN
+  # =====================================
   api:
     build: .
     container_name: ml-churn-api
     ports:
-      - "8000:8000"
+      - "127.0.0.1:8000:8000"
+    volumes:
+      - ./logs:/app/logs
     restart: unless-stopped
+    networks:
+      - elk
+
+  # =====================================
+  # 2. ELASTICSEARCH
+  # =====================================
+  elasticsearch:
+    image: elasticsearch:8.17.10
+    container_name: churn-elasticsearch
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - xpack.security.http.ssl.enabled=false
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m
+    ports:
+      - "127.0.0.1:9200:9200"
+    volumes:
+      - es_data:/usr/share/elasticsearch/data
+    restart: unless-stopped
+    networks:
+      - elk
+
+  # =====================================
+  # 3. LOGSTASH
+  # =====================================
+  logstash:
+    image: logstash:8.17.10
+    container_name: churn-logstash
+    depends_on:
+      - elasticsearch
+    volumes:
+      - ./logs:/app/logs:ro
+      - ./logstash/pipeline:/usr/share/logstash/pipeline:ro
+    environment:
+      - LS_JAVA_OPTS=-Xms256m -Xmx256m
+      - XPACK_MONITORING_ENABLED=false
+    restart: unless-stopped
+    networks:
+      - elk
+
+  # =====================================
+  # 4. KIBANA
+  # =====================================
+  kibana:
+    image: kibana:8.17.10
+    container_name: churn-kibana
+    depends_on:
+      - elasticsearch
+    ports:
+      - "127.0.0.1:5601:5601"
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+    restart: unless-stopped
+    networks:
+      - elk
+
+# =====================================
+# VOLUMES
+# =====================================
+volumes:
+  es_data:
+
+# =====================================
+# RESEAU DOCKER
+# =====================================
+networks:
+  elk:
+    driver: bridge
+
+
 
